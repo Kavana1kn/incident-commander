@@ -157,16 +157,6 @@ Step-by-step walkthrough & video plan: [`docs/incident_commander/demo_script.md`
 
 ---
 
-## How it maps to the judging criteria
-
-| Criterion | How Incident Commander addresses it |
-|-----------|--------------------------------------|
-| **Novelty** | An *evaluation loop* (self-disproving verifier) that overturns plausible-but-wrong actions + a *code-enforced* human-in-the-loop action gate — not a chat wrapper. |
-| **Neuro SAN features** | HOCON multi-agent network, multi-agent delegation, 4 `CodedTool`s, evaluation loop, `sly_data`, validated with `hocon_validator_cli`. |
-| **Code quality** | Deterministic evidence tools (no hallucinated data), offline RAG, clean separation of reasoning vs. tools, one focused agent network. |
-
----
-
 ## Compliance
 
 All data in `data/incident_commander/` is **synthetic** — no PII, financial, medical, or
