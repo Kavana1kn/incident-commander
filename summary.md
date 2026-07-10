@@ -3,7 +3,7 @@
 **Agentic AI Hackathon (Track 2) · Built on Cognizant Neuro SAN Studio**
 **Theme:** Human-in-the-loop AI that increases productivity while maintaining trust · Replace a manual business process with an agentic workflow.
 
----
+----
 
 ## Problem
 
@@ -89,7 +89,7 @@ launches the network in the nsflow UI.
 All data is synthetic; no PII, financial, medical, or proprietary datasets are used.
 Built solely on the Apache-2.0 Neuro SAN framework.
 
----
+----
 
 ## Team
 
