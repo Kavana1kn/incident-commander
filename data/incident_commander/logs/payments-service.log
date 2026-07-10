@@ -1,0 +1,11 @@
+2026-07-09T09:02:10Z INFO  payments-service [v5.1.4] pod=payments-aa11-0 Startup complete. Heap max=2048MB, used=310MB.
+2026-07-09T10:15:33Z INFO  payments-service [v5.1.4] pod=payments-aa11-0 Settled batch BATCH-4471 (1,204 txns) in 3.2s. Heap used=690MB.
+2026-07-09T11:40:12Z WARN  payments-service [v5.1.4] pod=payments-aa11-0 Heap usage climbing: used=1450MB/2048MB. GC pause 210ms.
+2026-07-09T12:55:41Z WARN  payments-service [v5.1.4] pod=payments-aa11-0 Heap usage high: used=1810MB/2048MB. GC pause 640ms. Full GC reclaimed only 40MB.
+2026-07-09T13:20:07Z WARN  payments-service [v5.1.4] pod=payments-aa11-0 GC overhead: 71% of last 60s spent in GC. Cache 'fx-rates' holds 2.1M entries (no eviction policy).
+2026-07-09T13:24:55Z ERROR payments-service [v5.1.4] pod=payments-aa11-0 java.lang.OutOfMemoryError: Java heap space at com.acme.payments.fx.RateCache.put(RateCache.java:88).
+2026-07-09T13:24:57Z ERROR payments-service [v5.1.4] pod=payments-aa11-0 Liveness probe failed. Pod payments-aa11-0 killed (OOMKilled), restarting.
+2026-07-09T13:25:44Z INFO  payments-service [v5.1.4] pod=payments-aa11-1 Startup complete. Heap max=2048MB, used=305MB.
+2026-07-09T14:58:22Z WARN  payments-service [v5.1.4] pod=payments-aa11-1 Heap usage high: used=1795MB/2048MB. GC pause 700ms. Cache 'fx-rates' holds 2.0M entries.
+2026-07-09T15:03:19Z ERROR payments-service [v5.1.4] pod=payments-aa11-1 java.lang.OutOfMemoryError: Java heap space at com.acme.payments.fx.RateCache.put(RateCache.java:88).
+2026-07-09T15:03:21Z ERROR payments-service [v5.1.4] pod=payments-aa11-1 Pod payments-aa11-1 killed (OOMKilled), restarting. Restart count today=6.

@@ -1,0 +1,9 @@
+2026-07-09T18:00:05Z INFO  search-service [v3.7.2] pod=search-cc33-2 Startup complete. Upstream 'catalog-api' healthy.
+2026-07-09T18:44:19Z INFO  search-service [v3.7.2] pod=search-cc33-2 Served 1,920 queries in last 5m, p99=180ms.
+2026-07-09T18:47:02Z WARN  search-service [v3.7.2] pod=search-cc33-2 Upstream 'catalog-api' latency rising: p99=1400ms (was 210ms).
+2026-07-09T18:47:58Z ERROR search-service [v3.7.2] pod=search-cc33-2 Upstream 'catalog-api' returned 503 Service Unavailable (12 of last 20 calls).
+2026-07-09T18:48:30Z WARN  search-service [v3.7.2] pod=search-cc33-2 Circuit breaker 'catalog-api' transitioned CLOSED -> OPEN (failureRate=60%).
+2026-07-09T18:48:31Z WARN  search-service [v3.7.2] pod=search-cc33-2 Serving DEGRADED results from stale cache (TTL expired 8m ago).
+2026-07-09T18:52:10Z ERROR search-service [v3.7.2] pod=search-cc33-2 Upstream 'catalog-api' still failing: 18 of last 20 calls returned 503.
+2026-07-09T18:55:44Z WARN  search-service [v3.7.2] pod=search-cc33-2 No config change or deploy detected for search-service in last 24h. Fault appears upstream.
+2026-07-09T19:01:12Z ERROR search-service [v3.7.2] pod=search-cc33-2 Circuit breaker 'catalog-api' still OPEN. Degraded results served for 13m.

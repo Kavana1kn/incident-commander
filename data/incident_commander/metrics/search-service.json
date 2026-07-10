@@ -1,0 +1,14 @@
+{
+  "service": "search-service",
+  "unit_notes": "upstream_error_rate is fraction of calls to catalog-api that failed; latency_p99_ms is search-service's own p99; served_from_cache_pct is fraction of responses served from stale cache.",
+  "interval_seconds": 180,
+  "series": [
+    {"ts": "2026-07-09T18:00:00Z", "error_rate": 0.002, "latency_p99_ms": 180, "upstream_error_rate": 0.00, "served_from_cache_pct": 0.05},
+    {"ts": "2026-07-09T18:44:00Z", "error_rate": 0.003, "latency_p99_ms": 190, "upstream_error_rate": 0.02, "served_from_cache_pct": 0.06},
+    {"ts": "2026-07-09T18:47:00Z", "error_rate": 0.050, "latency_p99_ms": 1400, "upstream_error_rate": 0.35, "served_from_cache_pct": 0.20},
+    {"ts": "2026-07-09T18:48:00Z", "error_rate": 0.090, "latency_p99_ms": 900, "upstream_error_rate": 0.60, "served_from_cache_pct": 0.72},
+    {"ts": "2026-07-09T18:52:00Z", "error_rate": 0.095, "latency_p99_ms": 850, "upstream_error_rate": 0.90, "served_from_cache_pct": 0.88},
+    {"ts": "2026-07-09T18:55:00Z", "error_rate": 0.098, "latency_p99_ms": 820, "upstream_error_rate": 0.90, "served_from_cache_pct": 0.90},
+    {"ts": "2026-07-09T19:01:00Z", "error_rate": 0.099, "latency_p99_ms": 810, "upstream_error_rate": 0.90, "served_from_cache_pct": 0.91}
+  ]
+}

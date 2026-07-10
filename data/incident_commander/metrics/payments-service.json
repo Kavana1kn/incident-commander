@@ -1,0 +1,15 @@
+{
+  "service": "payments-service",
+  "unit_notes": "heap_used_mb out of 2048MB max; gc_pct is fraction of wall-clock spent in GC; restarts is cumulative pod restarts today.",
+  "interval_seconds": 300,
+  "series": [
+    {"ts": "2026-07-09T09:02:00Z", "error_rate": 0.001, "latency_p99_ms": 190, "heap_used_mb": 310,  "gc_pct": 0.02, "restarts": 0},
+    {"ts": "2026-07-09T10:15:00Z", "error_rate": 0.001, "latency_p99_ms": 210, "heap_used_mb": 690,  "gc_pct": 0.05, "restarts": 0},
+    {"ts": "2026-07-09T11:40:00Z", "error_rate": 0.002, "latency_p99_ms": 260, "heap_used_mb": 1450, "gc_pct": 0.14, "restarts": 0},
+    {"ts": "2026-07-09T12:55:00Z", "error_rate": 0.004, "latency_p99_ms": 520, "heap_used_mb": 1810, "gc_pct": 0.41, "restarts": 0},
+    {"ts": "2026-07-09T13:20:00Z", "error_rate": 0.010, "latency_p99_ms": 900, "heap_used_mb": 1990, "gc_pct": 0.71, "restarts": 0},
+    {"ts": "2026-07-09T13:25:00Z", "error_rate": 0.120, "latency_p99_ms": 3000, "heap_used_mb": 305, "gc_pct": 0.03, "restarts": 1},
+    {"ts": "2026-07-09T14:58:00Z", "error_rate": 0.030, "latency_p99_ms": 800, "heap_used_mb": 1795, "gc_pct": 0.45, "restarts": 5},
+    {"ts": "2026-07-09T15:03:00Z", "error_rate": 0.140, "latency_p99_ms": 3200, "heap_used_mb": 300, "gc_pct": 0.03, "restarts": 6}
+  ]
+}

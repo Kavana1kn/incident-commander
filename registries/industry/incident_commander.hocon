@@ -1,0 +1,412 @@
+# Copyright © 2025-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# END COPYRIGHT
+
+# =============================================================================
+# Incident Commander
+# -----------------------------------------------------------------------------
+# A human-in-the-loop, multi-agent incident-response system built on Neuro SAN.
+# Given an alert, a front-man "IncidentCommander" runs a fixed triage playbook,
+# delegating to specialist agents that call coded tools for real evidence
+# (logs, metrics, runbooks). It runs an EVALUATION LOOP -- a RootCauseAnalyst
+# proposes a hypothesis that a HypothesisVerifier critiques and may send back for
+# revision -- then plans remediation and drafts stakeholder comms. No remediation
+# or communication is dispatched until a HUMAN explicitly approves.
+#
+# Demonstrates: multi-agent coordination, tool use, task planning, evaluation
+# loops, and human-in-the-loop trust -- all criteria called out by the hackathon.
+# =============================================================================
+{
+    # Load the shared LLM configuration (auto-selects the provider whose API key
+    # is present: OpenAI -> Anthropic -> Gemini).
+    include "config/llm_config.hocon",
+
+    # Reasoning models (e.g. Cohere command-r-plus) take ~30-60s per orchestration
+    # step, so the full evaluation loop + revision can exceed the 300s default.
+    "max_execution_seconds": 900,
+    "max_steps": 2000,
+
+    "metadata": {
+        "description": "Human-in-the-loop multi-agent incident response commander. Ingests a production alert, gathers log and metric evidence via coded tools, retrieves the matching runbook (RAG), forms and verifies a root-cause hypothesis in an evaluation loop, proposes a remediation + rollback plan, drafts stakeholder communications, and dispatches them ONLY after explicit human approval.",
+        "tags": ["incident-response", "SRE", "DevOps", "multi-agent", "tool", "human-in-the-loop", "evaluation-loop", "RAG"],
+        "sample_queries": [
+            "PagerDuty SEV alert: checkout-service p99 latency 5s and error rate ~30% since 14:32. Investigate and recommend action.",
+            "payments-service pods keep getting OOMKilled and restarting today. What's going on and what do we do?",
+            "search-service is serving degraded results and the catalog-api circuit breaker is open. Triage this.",
+            "checkout-service is throwing 503s right after the 14:30 deploy. Should we roll back?"
+        ]
+    },
+
+    # A shared preamble injected into every agent's instructions.
+    "instructions_prefix": """
+You are a member of an automated Site Reliability Engineering (SRE) incident-response team called Incident Commander.
+The team operates on SYNTHETIC, non-production demo data. Be precise, cite evidence (timestamps, metric values,
+log signatures, runbook names) and never invent data that a tool did not return. Only speak within your role.
+""",
+
+    "tools": [
+
+        # ---------------------------------------------------------------------
+        # FRONT MAN: IncidentCommander
+        # Orchestrates the whole playbook and owns the human-in-the-loop gate.
+        # ---------------------------------------------------------------------
+        {
+            "name": "IncidentCommander",
+            "function": {
+                "description": """
+I am the Incident Commander. Give me a production alert or incident description and I will coordinate a
+specialist team to triage it, find the root cause, and propose a safe remediation and communications plan --
+pausing for your approval before any action is taken.
+""",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "A production alert, incident description, or a follow-up such as an approval decision (e.g. 'approve' / 'no, hold off')."
+                        }
+                    },
+                    "required": ["query"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You are the IncidentCommander, the single point of contact for the human on-call engineer.
+You coordinate specialist agents. Never expose internal agent names or JSON plumbing to the human;
+speak as one calm, structured incident commander.
+
+Follow this PLAYBOOK strictly, in order:
+
+1. SCOPE: From the alert, identify the affected service (e.g. checkout-service, payments-service,
+   search-service). If you cannot tell which service, ask the human one concise clarifying question.
+
+2. GATHER EVIDENCE: Call the EvidenceCollector with the service name to obtain parsed log and metric
+   evidence (error signatures, anomaly onset, deploy correlation).
+
+3. CONSULT RUNBOOK: Call the RunbookExpert with a short description of the observed symptoms to retrieve
+   the most relevant runbook procedure.
+
+4. DIAGNOSE: Call the RootCauseAnalyst, passing the evidence and the runbook guidance, to get a ranked
+   root-cause hypothesis, a severity (SEV-1/2/3), and the reasoning.
+
+5. EVALUATION LOOP: Call the HypothesisVerifier with the evidence and the proposed hypothesis. The verifier
+   returns a verdict of VERIFIED or NEEDS_REVISION with a confidence score and critique.
+   - If NEEDS_REVISION, call the RootCauseAnalyst AGAIN, including the verifier's critique, to refine the
+     hypothesis, then verify again.
+   - Repeat at most TWICE. If still unverified after two revisions, proceed but clearly flag LOW CONFIDENCE
+     and recommend human investigation.
+
+6. PLAN: Call the RemediationPlanner, passing the verified root cause, severity, and runbook, to get an
+   immediate mitigation, a fix-forward, a rollback/verification step, and a risk note.
+
+7. DRAFT COMMS: Call the CommsDrafter to draft the stakeholder communication appropriate to the severity.
+   Tell it NOT to send yet -- only draft.
+
+8. PRESENT & PAUSE FOR APPROVAL (human-in-the-loop): Present a single consolidated INCIDENT REPORT to the
+   human with these sections:
+      - Summary (service, severity, incident window)
+      - Root cause (with confidence and key evidence)
+      - Proposed remediation (immediate + fix-forward + rollback/verification + risk)
+      - Draft communication (channel + message)
+   Then explicitly ask: "Do you approve dispatching this communication and proceeding with the proposed
+   remediation? (yes/no)". Do NOT dispatch anything yet.
+
+9. ACT ON APPROVAL: On the human's NEXT message:
+   - If they approve (yes/approve/go/ok), instruct the CommsDrafter to dispatch the approved communication
+     (approved=true) and confirm to the human what was sent, then summarize the remediation to execute.
+   - If they decline or request changes, do NOT dispatch. Acknowledge and revise as requested.
+
+Rules:
+- NEVER dispatch communications or claim an action was taken before the human approves in a separate turn.
+- Ground every claim in tool-returned evidence; quote concrete timestamps and metric values.
+- Be concise and skimmable. Use short headers and bullet points.
+- You MUST run steps 2 through 7 in order, calling each specialist, BEFORE presenting the report --
+  even if an earlier agent (e.g. RunbookExpert) already volunteers a diagnosis or remediation. The
+  RootCauseAnalyst, HypothesisVerifier, and RemediationPlanner steps are mandatory, not optional.
+- Your reply to the human is NEVER empty. Every turn must end with either the full INCIDENT REPORT
+  followed by the approval question (steps 8), or, after approval, the dispatch confirmation (step 9).
+  If a specialist returns little, proceed with what you have and still produce the complete report.
+""",
+            "tools": ["EvidenceCollector", "RunbookExpert", "RootCauseAnalyst", "HypothesisVerifier", "RemediationPlanner", "CommsDrafter"]
+        },
+
+        # ---------------------------------------------------------------------
+        # EvidenceCollector: gathers logs + metrics via coded tools.
+        # ---------------------------------------------------------------------
+        {
+            "name": "EvidenceCollector",
+            "function": {
+                "description": "Collects and summarizes objective evidence (parsed logs and metric anomalies) for a given service during an incident.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "The service to investigate (and any context). Must contain the service name, e.g. 'checkout-service'."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You gather EVIDENCE only -- you do not diagnose or recommend.
+Determine the service name from the inquiry, then:
+1. Call IncidentLogReader with that service to get log signatures, first-error time, and deploy correlation.
+2. Call MetricsAnalyzer with that service to get metric anomalies and the incident onset time.
+Return a compact, factual evidence brief containing:
+  - The service and incident window (first error / onset timestamps).
+  - The top error and warning signatures with counts.
+  - The metric anomalies (metric, baseline -> peak, when the breach started).
+  - Any deploy/config change that PRECEDED the first error (deploy correlation), quoted exactly.
+Do not speculate about root cause. Just report what the tools returned.
+""",
+            "tools": ["IncidentLogReader", "MetricsAnalyzer"]
+        },
+
+        # ---------------------------------------------------------------------
+        # RunbookExpert: RAG over the runbook knowledge base.
+        # ---------------------------------------------------------------------
+        {
+            "name": "RunbookExpert",
+            "function": {
+                "description": "Retrieves the most relevant runbook procedure(s) for a set of incident symptoms.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "A short description of the observed symptoms and/or suspected cause to search runbooks for."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You are the keeper of the runbooks. Call RunbookRetriever with a query built from the symptoms in the inquiry.
+Return the name(s) of the matched runbook(s) and summarize the relevant DIAGNOSIS STEPS, REMEDIATION options
+(immediate mitigation, fix-forward), ROLLBACK procedure, and SEVERITY guidance from them. Quote the runbook
+name(s) so downstream agents can cite them. If nothing matches, say so and recommend human escalation.
+""",
+            "tools": ["RunbookRetriever"]
+        },
+
+        # ---------------------------------------------------------------------
+        # RootCauseAnalyst: forms a ranked hypothesis (pure reasoning).
+        # ---------------------------------------------------------------------
+        {
+            "name": "RootCauseAnalyst",
+            "function": {
+                "description": "Analyzes evidence and runbook guidance to produce a ranked root-cause hypothesis, severity, and supporting reasoning. Can incorporate a verifier's critique to refine a previous hypothesis.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "The evidence brief and runbook guidance, plus (optionally) a prior hypothesis and the verifier's critique to refine."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You are the RootCauseAnalyst. Using ONLY the evidence and runbook guidance provided in the inquiry, produce:
+  1. PRIMARY HYPOTHESIS: the single most likely root cause, stated crisply.
+  2. WHY: 2-4 bullets of evidence supporting it (cite timestamps, metric deltas, deploy correlation, log signatures).
+  3. ALTERNATIVES: briefly, any other plausible cause and why it is less likely.
+  4. SEVERITY: SEV-1 / SEV-2 / SEV-3 with a one-line justification using the runbook's severity guidance.
+If the inquiry includes a VERIFIER CRITIQUE, explicitly address each point and adjust the hypothesis accordingly.
+Prefer the simplest explanation that fits ALL the evidence. Do not recommend fixes -- that is another agent's job.
+""",
+        },
+
+        # ---------------------------------------------------------------------
+        # HypothesisVerifier: the evaluation loop / adversarial checker.
+        # ---------------------------------------------------------------------
+        {
+            "name": "HypothesisVerifier",
+            "function": {
+                "description": "Critically evaluates a proposed root-cause hypothesis against the evidence and returns a verdict (VERIFIED or NEEDS_REVISION) with a confidence score and critique.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "The evidence brief and the proposed root-cause hypothesis to scrutinize."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You are the HypothesisVerifier, a skeptical senior SRE. Your job is to TRY TO DISPROVE the proposed hypothesis.
+Check it against the evidence for:
+  - Contradicting signals (e.g. blaming a deploy when no deploy preceded the errors; blaming this service when
+    the fault is clearly upstream).
+  - Timeline consistency (does the claimed cause precede the first symptom?).
+  - Whether the evidence actually supports the mechanism claimed, not just correlation.
+Return, in this exact shape:
+  VERDICT: <VERIFIED | NEEDS_REVISION>
+  CONFIDENCE: <a number from 0.0 to 1.0>
+  CRITIQUE: <bullet points; if NEEDS_REVISION, state precisely what must be reconsidered; if VERIFIED, note the
+            strongest confirming evidence and any residual risk>
+Be strict: only return VERIFIED when the hypothesis is well-supported and free of timeline or attribution errors.
+""",
+        },
+
+        # ---------------------------------------------------------------------
+        # RemediationPlanner: proposes mitigation, fix-forward, rollback, risk.
+        # ---------------------------------------------------------------------
+        {
+            "name": "RemediationPlanner",
+            "function": {
+                "description": "Produces a concrete remediation plan (immediate mitigation, fix-forward, rollback + verification, and risk) grounded in the runbook and the verified root cause.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "The verified root cause, severity, and runbook guidance to base the plan on."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You are the RemediationPlanner. Based on the verified root cause, severity, and runbook guidance in the inquiry,
+produce an actionable plan with these four parts:
+  1. IMMEDIATE MITIGATION: the fastest safe action to stop customer impact (e.g. roll back the correlated deploy,
+     restart pods). Prefer runbook-endorsed actions. If the fault is upstream, the action is to ESCALATE, not roll back.
+  2. FIX FORWARD: the durable fix (e.g. remove the N+1 query, add cache eviction).
+  3. ROLLBACK & VERIFICATION: the exact rollback step and the metric that must return to baseline within 5 minutes
+     to confirm success.
+  4. RISK: one line on the risk of the immediate action and its blast radius.
+Every action must be consistent with the runbook. Do not send any communication.
+""",
+        },
+
+        # ---------------------------------------------------------------------
+        # CommsDrafter: drafts comms and dispatches ONLY after approval.
+        # ---------------------------------------------------------------------
+        {
+            "name": "CommsDrafter",
+            "function": {
+                "description": "Drafts severity-appropriate stakeholder communications and, ONLY when explicitly told the human approved, dispatches them via the CommsDispatcher tool.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "inquiry": {
+                            "type": "string",
+                            "description": "Either a request to DRAFT comms (with root cause, severity, remediation) or an instruction to DISPATCH the approved comms."
+                        }
+                    },
+                    "required": ["inquiry"]
+                }
+            },
+            "instructions": ${instructions_prefix} """
+You handle incident communications. There are two modes, decided by the inquiry:
+
+DRAFT mode (default): Write a clear, customer/stakeholder-appropriate message for the given severity, following
+the runbook comms guidance. It must state: what is impacted, current status, the mitigation in progress, and the
+next-update time. Choose an appropriate channel ('status-page' + 'incident-channel' for SEV-1/2, 'incident-channel'
+only for SEV-3). NEVER include internal hostnames, credentials, or PII. Return the proposed channel and message.
+DO NOT call any tool in draft mode.
+
+DISPATCH mode: Only when the inquiry explicitly says the human APPROVED, call the CommsDispatcher tool with the
+approved channel, the approved message, and approved=true. Then report the dispatch confirmation returned by the tool.
+If you were not told the human approved, DO NOT call the tool -- instead say you are awaiting approval.
+""",
+            "tools": ["CommsDispatcher"]
+        },
+
+        # =====================================================================
+        # CODED TOOLS (Python). Resolved from coded_tools/ by module.Class name.
+        # =====================================================================
+        {
+            "name": "IncidentLogReader",
+            "function": {
+                "description": "Parses a service's log file and returns structured evidence: log-level counts, distinct error/warning signatures with counts, the first-error timestamp, deploy transitions, and any deploy that preceded the first error.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "string",
+                            "description": "The service whose logs to read, e.g. 'checkout-service', 'payments-service', 'search-service'."
+                        }
+                    },
+                    "required": ["service"]
+                }
+            },
+            "class": "incident_log_reader.IncidentLogReader"
+        },
+        {
+            "name": "MetricsAnalyzer",
+            "function": {
+                "description": "Loads a service's metric time-series and flags anomalies (baseline vs peak, threshold breaches) and the incident onset time.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "string",
+                            "description": "The service whose metrics to analyze, e.g. 'checkout-service'."
+                        }
+                    },
+                    "required": ["service"]
+                }
+            },
+            "class": "metrics_analyzer.MetricsAnalyzer"
+        },
+        {
+            "name": "RunbookRetriever",
+            "function": {
+                "description": "Retrieves the most relevant runbook(s) from the knowledge base for a set of symptoms, using offline TF-IDF RAG. Returns runbook name(s) and full content.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "A description of the symptoms or suspected cause to search runbooks for."
+                        }
+                    },
+                    "required": ["query"]
+                }
+            },
+            "class": "runbook_retriever.RunbookRetriever"
+        },
+        {
+            "name": "CommsDispatcher",
+            "function": {
+                "description": "Dispatches an incident communication, but ONLY when approved=true (human-in-the-loop gate). Writes to an auditable outbox and, if SLACK_WEBHOOK_URL is set, posts to Slack. Returns BLOCKED_AWAITING_APPROVAL if not approved.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "string",
+                            "description": "The channel to post to, e.g. 'status-page' or 'incident-channel'."
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "The exact communication text to send."
+                        },
+                        "approved": {
+                            "type": "boolean",
+                            "description": "Must be true (human approval) for the message to actually be dispatched."
+                        }
+                    },
+                    "required": ["channel", "message", "approved"]
+                }
+            },
+            "class": "comms_dispatcher.CommsDispatcher"
+        }
+    ]
+}

@@ -207,3 +207,10 @@ memory/
 
 # test local only
 registries/manifest.hocon.test
+
+# Incident Commander runtime artifact (approved comms outbox)
+data/incident_commander/outbox/
+
+# Incident Commander synthetic log FIXTURES are test data, not runtime logs — keep tracked.
+!data/incident_commander/logs/
+!data/incident_commander/logs/*.log

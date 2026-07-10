@@ -1,0 +1,9 @@
+{
+  "note": "Recent change/deploy events across services, newest last. Used to correlate incidents with changes.",
+  "deploys": [
+    {"service": "checkout-service", "version": "v2.3.0", "ts": "2026-07-08T11:05:00Z", "change": "Add gift-card redemption", "author": "team-checkout"},
+    {"service": "search-service",   "version": "v3.7.2", "ts": "2026-07-08T16:20:00Z", "change": "Tune relevance ranking", "author": "team-search"},
+    {"service": "payments-service", "version": "v5.1.4", "ts": "2026-07-06T10:00:00Z", "change": "Add FX rate caching (RateCache)", "author": "team-payments"},
+    {"service": "checkout-service", "version": "v2.3.1", "ts": "2026-07-09T14:30:00Z", "change": "Optimize cart pricing; refactor cart_items fetch; lower DB pool size 50->10 to cut idle connections", "author": "team-checkout"}
+  ]
+}

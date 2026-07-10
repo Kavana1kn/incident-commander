@@ -1,0 +1,17 @@
+2026-07-09T14:25:03Z INFO  checkout-service [v2.3.0] pod=checkout-7f9c-abcde Startup complete. DB pool size=50, active=4.
+2026-07-09T14:28:11Z INFO  checkout-service [v2.3.0] pod=checkout-7f9c-abcde Processed order ORD-88213 in 142ms.
+2026-07-09T14:30:02Z INFO  checkout-service [v2.3.1] pod=checkout-6b2d-fghij Rolling deploy started: v2.3.0 -> v2.3.1 (change: "optimize cart pricing").
+2026-07-09T14:30:44Z INFO  checkout-service [v2.3.1] pod=checkout-6b2d-fghij Startup complete. DB pool size=10, active=3.
+2026-07-09T14:31:20Z INFO  checkout-service [v2.3.1] pod=checkout-6b2d-fghij Processed order ORD-88240 in 380ms.
+2026-07-09T14:32:05Z WARN  checkout-service [v2.3.1] pod=checkout-6b2d-fghij Slow query detected: SELECT * FROM cart_items WHERE cart_id=? (executed 38 times for single request, 1180ms total).
+2026-07-09T14:32:41Z WARN  checkout-service [v2.3.1] pod=checkout-6b2d-fghij DB pool near capacity: active=9/10, waiting=6.
+2026-07-09T14:33:10Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij Timeout acquiring connection from pool after 5000ms. HikariPool-1 - Connection is not available, request timed out.
+2026-07-09T14:33:12Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij Failed to process order ORD-88251: java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available.
+2026-07-09T14:33:29Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij DB pool EXHAUSTED: active=10/10, waiting=41, timeouts=17.
+2026-07-09T14:34:02Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij Timeout acquiring connection from pool after 5000ms. HikariPool-1 - Connection is not available, request timed out.
+2026-07-09T14:34:35Z WARN  checkout-service [v2.3.1] pod=checkout-6b2d-fghij Circuit breaker 'orders-db' transitioned CLOSED -> OPEN (failureRate=62%).
+2026-07-09T14:35:00Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij 503 Service Unavailable returned to gateway for /api/checkout (upstream orders-db unavailable).
+2026-07-09T14:36:14Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij DB pool EXHAUSTED: active=10/10, waiting=58, timeouts=44.
+2026-07-09T14:38:47Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij Failed to process order ORD-88310: java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available.
+2026-07-09T14:41:03Z ERROR checkout-service [v2.3.1] pod=checkout-6b2d-fghij 503 Service Unavailable returned to gateway for /api/checkout (upstream orders-db unavailable).
+2026-07-09T14:42:59Z WARN  checkout-service [v2.3.1] pod=checkout-6b2d-fghij DB pool EXHAUSTED: active=10/10, waiting=63, timeouts=71. Sustained for 9m.

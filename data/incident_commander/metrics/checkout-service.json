@@ -1,0 +1,17 @@
+{
+  "service": "checkout-service",
+  "unit_notes": "error_rate is fraction of requests failing (0-1); latency_p99_ms in milliseconds; db_pool_active out of max 10 after 14:30 deploy; cpu_pct 0-100.",
+  "interval_seconds": 60,
+  "series": [
+    {"ts": "2026-07-09T14:25:00Z", "error_rate": 0.002, "latency_p99_ms": 210, "db_pool_active": 4,  "cpu_pct": 31, "requests_per_min": 1180},
+    {"ts": "2026-07-09T14:28:00Z", "error_rate": 0.003, "latency_p99_ms": 240, "db_pool_active": 5,  "cpu_pct": 34, "requests_per_min": 1205},
+    {"ts": "2026-07-09T14:30:00Z", "error_rate": 0.004, "latency_p99_ms": 300, "db_pool_active": 6,  "cpu_pct": 38, "requests_per_min": 1190},
+    {"ts": "2026-07-09T14:32:00Z", "error_rate": 0.061, "latency_p99_ms": 1300, "db_pool_active": 9, "cpu_pct": 44, "requests_per_min": 1210},
+    {"ts": "2026-07-09T14:33:00Z", "error_rate": 0.290, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 47, "requests_per_min": 1188},
+    {"ts": "2026-07-09T14:34:00Z", "error_rate": 0.470, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 49, "requests_per_min": 1150},
+    {"ts": "2026-07-09T14:36:00Z", "error_rate": 0.610, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 46, "requests_per_min": 1090},
+    {"ts": "2026-07-09T14:38:00Z", "error_rate": 0.660, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 45, "requests_per_min": 1010},
+    {"ts": "2026-07-09T14:41:00Z", "error_rate": 0.690, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 44, "requests_per_min": 980},
+    {"ts": "2026-07-09T14:42:00Z", "error_rate": 0.710, "latency_p99_ms": 5000, "db_pool_active": 10, "cpu_pct": 43, "requests_per_min": 960}
+  ]
+}
